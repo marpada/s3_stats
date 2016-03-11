@@ -78,14 +78,14 @@ if __name__  == "__main__":
     days = 1
     parser = argparse.ArgumentParser(description="Prints metrics about S3 buckets")
     parser.add_argument('-d', '--days',action="store",default=14,type=int)
-    parser.add_argument('-b','--buckets', default=[],action="append",help="Comma-separated list of selected buckets (will list all buckets if emtpy")
+    parser.add_argument('-b','--buckets', default=[],action="store",help="Comma-separated list of selected buckets (will list all buckets if emtpy")
 
     args = parser.parse_args()
     if args.days not in range(2,15):
         print("days must be between 2 and 14")
         sys.exit(1)
     if args.buckets:
-        metrics = get_bucket_metrics(args.buckets,args.days)
+        metrics = get_bucket_metrics(args.buckets.split(','),args.days)
     else:
         metrics = get_bucket_metrics(list_buckets(),args.days)
     print_metrics(metrics)
