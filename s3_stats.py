@@ -14,14 +14,18 @@ def get_region(location):
     else:
         return location
 
+def get_bucket_region(bucket):
+    s3_client = boto3.client('s3')
+    location = s3_client.get_bucket_location(Bucket=bucket)['LocationConstraint']
+    return get_region(location)
+
 def get_bucket_metrics(buckets,days=14):
     s3_client = boto3.client('s3')
     METRICS = {'NumberOfObjects' : ['AllStorageTypes'],'BucketSizeBytes': ['StandardStorage','ReducedRedundancyStorage','StandardIAStorage']}
     results = {}
     now = datetime.datetime.utcnow()
     for bucket in buckets:
-        location = s3_client.get_bucket_location(Bucket=bucket)['LocationConstraint']
-        region = get_region(location)
+        region = get_bucket_region(bucket)
         cw = boto3.client('cloudwatch',region_name = region)
         datapoints = {}
         for metric, storage_types in METRICS.items():
@@ -50,10 +54,11 @@ def Gb(bytes):
 
 def print_metrics(results,out_file=sys.stdout):
     rows = []
-    headers = ['Bucket','Date']
+    headers = ['Bucket','Region','Date']
     for bucket in sorted(results.keys()):
+        region = get_bucket_region(bucket)
         for date in sorted(results[bucket].keys()):
-            row = { 'Date' : date, 'Bucket' : bucket}
+            row = { 'Date' : date, 'Region': region, 'Bucket' : bucket}
             for metric in results[bucket][date].keys():
                 for storage_type in results[bucket][date][metric].keys():
                     key = metric + "_" + storage_type
